@@ -35,10 +35,10 @@
 ## 🔧 사전 요구사항
 
 ### 시스템 요구사항
-- **OS**: Ubuntu 22.04 LTS (권장)
-- **CPU**: 최소 2 Core
-- **RAM**: 최소 4GB
-- **Disk**: 최소 20GB 여유 공간
+- **OS**: Ubuntu 24.04 LTS
+- **CPU**: 최소 4 Core
+- **RAM**: 최소 8GB
+- **Disk**: 최소 50GB 여유 공간
 
 ### 필요 도구
 - `curl`, `wget`, `git`
