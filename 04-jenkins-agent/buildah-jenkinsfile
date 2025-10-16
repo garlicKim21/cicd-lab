@@ -1,0 +1,28 @@
+pipeline {
+    agent {
+        kubernetes {
+            cloud 'kubernetes'
+            yaml """
+apiVersion: v1
+kind: Pod
+spec:
+  containers:
+  - name: buildah
+    image: quay.io/buildah/stable:v1.41.5
+    command: ['sleep']
+    args: ['infinity']
+"""
+        }
+    }
+    stages {
+        stage('Test Buildah command') {
+            steps {
+                container('buildah') {
+                    script {
+                        sh 'buildah --version'
+                    }
+                }
+            }
+        }
+    }
+}
