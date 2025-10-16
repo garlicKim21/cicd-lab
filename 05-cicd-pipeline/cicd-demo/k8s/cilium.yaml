@@ -1,0 +1,19 @@
+# k8s/ingress.yaml
+
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: cicd-demo-ingress
+spec:
+  ingressClassName: cilium
+  rules:
+  - host: "demo.cicd.lab"
+    http:
+      paths:
+      - path: /
+        pathType: Prefix
+        backend:
+          service:
+            name: cicd-demo-service
+            port:
+              number: 80
