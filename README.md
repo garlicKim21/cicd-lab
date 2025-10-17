@@ -58,14 +58,23 @@ cicd-lab/
 │   └── jenkinsfile             # Kubernetes 통신 테스트 파이프라인
 ├── 04-jenkins-agent/           # Jenkins Agent 구성
 │   └── buildah-jenkinsfile     # Buildah 테스트 파이프라인
-├── 05-cicd-pipeline/           # 완전한 CI/CD 파이프라인
-│   ├── cicd-demo/              # 데모 애플리케이션
-│   │   ├── package.json        # Node.js 프로젝트 설정
-│   │   ├── server.js           # Express 서버
-│   │   ├── Dockerfile          # 멀티스테이지 빌드
-│   │   └── public/
-│   │       └── index.html      # 웹 인터페이스
-│   └── cicd-demo-jenkinsfile   # 완전한 CI/CD 파이프라인
+├── 05-cicd-pipeline/           # CI/CD 파이프라인 실습
+│   ├── ci-demo-jenkinsfile     # CI (Continuous Integration) 파이프라인
+│   ├── cd-demo-jenkinsfile     # CD (Continuous Deployment) 파이프라인
+│   └── cicd-demo/              # 데모 애플리케이션
+│       ├── package.json        # Node.js 프로젝트 설정
+│       ├── server.js           # Express 서버
+│       ├── Dockerfile          # 멀티스테이지 빌드
+│       ├── .dockerignore       # Docker 빌드 최적화
+│       ├── k8s/                # Kubernetes 배포 매니페스트
+│       │   ├── deployment.yaml # 애플리케이션 배포 설정
+│       │   ├── service.yaml    # 서비스 노출 설정
+│       │   └── ingress.yaml    # Ingress 설정
+│       ├── public/
+│       │   └── index.html      # 웹 인터페이스
+│       └── README.md           # 애플리케이션 설명서
+├── 06-webhook/                 # 웹훅 기반 자동화
+│   └── jenkinsfile             # GitHub 웹훅 파이프라인
 └── README.md                   # 이 파일
 ```
 
@@ -139,9 +148,25 @@ Jenkins 웹 UI에서 "New Item" → "Pipeline" 생성 후 다음 파이프라인
 // 04-jenkins-agent/buildah-jenkinsfile 내용 복사
 ```
 
-### 5단계: 완전한 CI/CD 파이프라인 구축
+### 5단계: CI/CD 파이프라인 실습
 
-#### 5-1. 인증서 설정
+#### 5-1. CI (Continuous Integration) 파이프라인
+
+`ci-demo-jenkinsfile`을 사용하여 다음을 실습:
+- 소스코드 체크아웃
+- 애플리케이션 빌드
+- 컨테이너 이미지 생성
+- 이미지 레지스트리 푸시
+
+#### 5-2. CD (Continuous Deployment) 파이프라인
+
+`cd-demo-jenkinsfile`을 사용하여 다음을 실습:
+- Kubernetes 배포 매니페스트 적용
+- 애플리케이션 배포
+- 서비스 노출 및 Ingress 설정
+- 배포 상태 확인
+
+#### 5-3. 인증서 설정
 
 Jenkins에서 다음 인증서들을 설정:
 
@@ -154,14 +179,23 @@ Jenkins에서 다음 인증서들을 설정:
    - Username: Docker Hub 사용자명
    - Password: Docker Hub 액세스 토큰
 
-#### 5-2. 파이프라인 설정
+#### 5-4. 파이프라인 설정
 
-`cicd-demo-jenkinsfile`의 다음 변수들을 수정:
+각 Jenkinsfile의 다음 변수들을 수정:
 
 ```groovy
 def DOCKERHUB_USERNAME = "your-dockerhub-username"
 def GIT_REPO_URL = "git@github.com:your-username/your-repo.git"
 ```
+
+### 6단계: 웹훅 기반 자동화 (선택사항)
+
+#### 6-1. GitHub 웹훅 설정
+
+`06-webhook/jenkinsfile`을 사용하여:
+- GitHub 저장소에 웹훅 설정
+- 코드 푸시 시 자동 빌드/배포
+- 완전 자동화된 CI/CD 파이프라인 구축
 
 ## ✨ 주요 기능
 

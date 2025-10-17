@@ -1,0 +1,104 @@
+// 파이프라인 전체에서 사용할 변수 정의
+def DOCKERHUB_REGISTRY = "docker.io" // Docker Hub 주소
+def DOCKERHUB_USERNAME = "<사용자 Docker Hube ID>" // 본인 Docker Hub ID로 변경
+def APP_NAME = "cicd-demo"
+def GIT_REPO_URL = "git@github.com:<사용자 github repo 주소>.git" // 본인 Github Repo 주소로 변경
+def GIT_CREDENTIALS_ID = "github-ssh-key" // Jenkins에 등록할 Git SSH 인증서 ID
+def REGISTRY_CREDENTIALS_ID = "dockerhub-credentials" // Jenkins에 등록할 레지스트리 인증서 ID
+
+pipeline {
+    // 1. Agent 설정: 파이프라인을 실행할 환경(Pod) 정의
+    agent {
+        kubernetes {
+            cloud 'kubernetes'
+            yaml """
+apiVersion: v1
+kind: Pod
+spec:
+  containers:
+  - name: git
+    image: alpine/git:latest
+    command: ['sleep']
+    args: ['infinity']
+  - name: buildah
+    image: quay.io/buildah/stable:v1.41.5
+    command: ['sleep']
+    args: ['infinity']
+    securityContext:
+      privileged: true
+    volumeMounts:
+      - name: varlibcontainers
+        mountPath: /var/lib/containers
+  volumes:
+    - name: varlibcontainers
+      emptyDir: {}
+"""
+        }
+    }
+
+    // 2. Stages: 실제 작업 단계들 정의
+    stages {
+        // Stage 1: Git 소스코드 Checkout
+        stage('Checkout Source Code') {
+            steps {
+                container('git') {
+                    checkout([
+                        $class: 'GitSCM',
+                        branches: [[name: '*/main']],
+                        userRemoteConfigs: [[
+                            url: GIT_REPO_URL,
+                            credentialsId: GIT_CREDENTIALS_ID
+                        ]]
+                    ])
+                    sh 'ls -al'
+                }
+            }
+        }
+
+        // Stage 2: Buildah로 컨테이너 이미지 빌드
+        stage('Build Container Image') {
+            steps {
+                container('buildah') {
+                    script {
+                        // 이미지 태그 생성 (예: cicd-demo:1)
+                        def IMAGE_TAG = "${APP_NAME}:${BUILD_NUMBER}"
+                        
+                        // Dockerfile을 사용하여 이미지 빌드
+                        sh "buildah bud --tag ${IMAGE_TAG} ."
+                        sh "buildah images"
+                    }
+                }
+            }
+        }
+
+        // Stage 3: 컨테이너 레지스트리에 이미지 Push
+        stage('Push Image to Registry') {
+            steps {
+                container('buildah') {
+                    script {
+                        def IMAGE_TAG = "${APP_NAME}:${BUILD_NUMBER}"
+                        def REGISTRY_IMAGE = "${DOCKERHUB_REGISTRY}/${DOCKERHUB_USERNAME}/${IMAGE_TAG}"
+
+                        // withCredentials 블록을 사용하여 Jenkins에 저장된 인증 정보 사용
+                        withCredentials([usernamePassword(credentialsId: REGISTRY_CREDENTIALS_ID, usernameVariable: 'USER', passwordVariable: 'PASS')]) {
+                            // 레지스트리 로그인
+                            sh "buildah login -u '${USER}' -p '${PASS}' ${DOCKERHUB_REGISTRY}"
+                            
+                            // 이미지 Push
+                            sh "buildah push ${IMAGE_TAG} ${REGISTRY_IMAGE}"
+                        }
+                    }
+                }
+            }
+        }
+    }
+
+    // 3. Post Actions: 파이프라인 종료 후 작업
+    post {
+        always {
+            echo 'Pipeline finished.'
+            // 작업 공간 정리
+            deleteDir()
+        }
+    }
+}
